@@ -8,7 +8,7 @@ But this means we can add whatever we want to that space. And that's the cool pa
 > This is in early development, so I advise you not to use it for production purposes.
 
 
-![Screen Capture](https://github.com/the-duck/react-native-space/img/screen.gif)
+![Screen Capture](https://github.com/the-duck/react-native-space/blob/master/img/screen.gif)
 
 ### Installation
 ```
