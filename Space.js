@@ -1,40 +1,58 @@
 import React from 'react';
 import {
-  Image,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   PanResponder,
-  Animated
+  Animated,
+  TextInput
 } from 'react-native';
 
 import SpaceStyles from "./SpaceStyle";
 
 
-export class Space extends React.Component {
+export default class Space extends React.Component {
   constructor(props) {
     super(props);
 
+
     this.state = {
+      x:this.props.x || 0,
+      y:this.props.y || 0,
       width: 0,
       height: 0,
       pan:new Animated.ValueXY(),
-      d:new Animated.ValueXY(),
+      d:new Animated.ValueXY({x:this.props.x||0, y:this.props.y||0}),
       unitsize : this.props.unitsize || 64,
+      componentsList:[]
     }
     this.measureWelcome = this.measureWelcome.bind(this);
     this.handleMove = this.handleMove.bind(this);
   }
   measureWelcome(event) {
+    var x = this.props.x || 0;
+    var y = this.props.y || 0;
+
+    if (this.props.loadInitialComponents) {
+      var boundary = {
+        "left":x,
+        "right":x+this.state.width,
+        "top":y,
+        "bottom":y+this.state.height,
+      }
+      var l = this.props.loadInitialComponents(boundary)
+    } else {
+      var l = []
+    }
     this.setState({
       x:this.props.x || 0,
       y:this.props.y || 0,
       width: event.nativeEvent.layout.width,
-      height: event.nativeEvent.layout.height
+      height: event.nativeEvent.layout.height,
+      componentsList:l
     })
+
   }
 
   async handleMove(e) {
@@ -46,12 +64,17 @@ export class Space extends React.Component {
       "bottom":e.y+this.state.height,
     }
     /*TODO : ADD ERROR HANDLING */
-    this.props.onPositionChange(boundarybox);
+    if (typeof this.props.onPositionChange == 'function') {
+      try {
+        this.props.onPositionChange(boundarybox);
+      } catch (e) {
+        console.log(e);
+      } finally {
+
+      }
+    }
   }
 
-  componentWillUnmount() {
-
-  }
 
   componentWillMount() {
     this.state.d.addListener((value) => this.handleMove(value));
@@ -63,13 +86,13 @@ export class Space extends React.Component {
         var y = this.state.y;
         var newx = x-gesture.dx;
         var newy = y-gesture.dy;
-        var newgx = gesture.dx;
-        var newgy = gesture.dy;
-        if (gesture.dx<-this.props.unitsize || gesture.dx>=this.state.unitsize) {
-          newgx = -(Math.floor(gesture.dx/this.state.unitsize)-gesture.dx/this.props.unitsize)*this.state.unitsize;
+        var newgx = -newx;
+        var newgy = -newy;
+        if (newgx<-this.state.unitsize || newgx>=this.state.unitsize) {
+          newgx = (Math.floor(newx/this.state.unitsize)-newx/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
         }
-        if (gesture.dy<-this.props.unitsize || gesture.dy>=this.state.unitsize) {
-          newgy = -(Math.floor(gesture.dy/this.state.unitsize)-gesture.dy/this.props.unitsize)*this.state.unitsize;
+        if (gesture.dy<-this.state.unitsize || gesture.dy>=this.state.unitsize) {
+          newgy = (Math.floor(newy/this.state.unitsize)-newy/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
         }
         Animated.event([
           null,
@@ -87,8 +110,10 @@ export class Space extends React.Component {
     })
   }
 
+  async componentDidMount() {
+  }
 
-  getStyle(linesize, rowsize) {
+  getLineStyle(linesize, rowsize) {
     if (linesize===0) {
       var top = rowsize;
       var left = 0;
@@ -104,8 +129,13 @@ export class Space extends React.Component {
       var translateX = this.state.pan.x;
       var translateY = 0;
     }
+    if (this.props.theme) {
+      var style=this.props.theme;
+    } else {
+      var style = SpaceStyles;
+    }
     return [
-              SpaceStyles.line,
+              style._spaceLine || SpaceStyles._spaceLine,
               {
                 width:width,
                 height:height,
@@ -127,21 +157,47 @@ export class Space extends React.Component {
     const numberoflines = Math.floor(this.state.width/this.state.unitsize)+4;
     var lines = [];
     for (i=0; i<numberoflines; i++ ) {
-      lines.push({x: (i-2)*this.props.unitsize-this.state.unitsize-this.state.unitsize/2, id:i});
+      lines.push({x: (i-2)*this.state.unitsize-this.state.unitsize-this.state.unitsize/2, id:i});
     };
     const numberofrows = Math.floor(this.state.height/this.state.unitsize)+4;
     var rows = [];
     for (i=0; i<numberofrows; i++ ) {
       rows.push({y: (i-2)*this.state.unitsize-this.state.unitsize/2, id:i});
     };
+
+    if (this.state.componentsList.length>0) {
+      var items = this.state.componentsList.map(item =>
+        (<Animated.View style={{position:"absolute", top:Animated.multiply(Animated.add(this.state.d.y, -item.y), -1), left:Animated.multiply(Animated.add(this.state.d.x, -item.x), -1), width:item.width, height:item.height}}>{item.component}</Animated.View>)
+      );
+    } else {
+      var items = [];
+    }
+
+    if (this.props.theme) {
+      var style = this.props.theme;
+    } else {
+      var style = SpaceStyles;
+    }
     return (
-      <View onLayout={(e) => this.measureWelcome(e)} style={SpaceStyles.view} {...this._panResponder.panHandlers} >
-        { lines.map(line => <Animated.View style={this.getStyle(line.x, 0)} key={line.id}></Animated.View>)}
-        { rows.map(row => <Animated.View style={this.getStyle(0,row.y)} key={row.id}></Animated.View>)}
-        <View style={[SpaceStyles.border,{height:"100%", top:0, right:0}]}></View>
-        <View style={[SpaceStyles.border,{height:"100%", top:0, left:0}]}></View>
-        <View style={[SpaceStyles.border,{width:"100%", top:0, left:0}]}></View>
-        <View style={[SpaceStyles.border,{width:"100%", bottom:0, left:0}]}></View>
+      <View onLayout={(e) => this.measureWelcome(e)} style={style._spaceView || SpaceStyles._spaceView} {...this._panResponder.panHandlers} >
+        { lines.map(line => <Animated.View style={this.getLineStyle(line.x, 0)} key={line.id}></Animated.View>)}
+        { rows.map(row => <Animated.View style={this.getLineStyle(0,row.y)} key={row.id}></Animated.View>)}
+
+        {items}
+
+      </View>
+    )
+  }
+};
+
+
+export class SpaceTest extends React.Component {
+
+  render() {
+    return (
+      <View style={SpaceStyles.testView}>
+        <Text style={SpaceStyles.testText}>This is a test component</Text>
+        <TextInput value="Write here" style={SpaceStyles.testInput}></TextInput>
       </View>
     )
   }
