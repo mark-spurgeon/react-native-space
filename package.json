@@ -10,5 +10,6 @@
   "license": "MIT",
   "devDependencies": {
     "react-native": "^0.55.3"
-  }
+  },
+  "keywords": ["react-native", "space", "area", "map", "component"]
 }

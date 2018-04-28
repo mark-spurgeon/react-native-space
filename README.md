@@ -7,6 +7,9 @@ Basically, it's a stripped-down map.
 But this means we can add whatever we want to that space. And that's the cool part.
 > This is in early development, so I advise you not to use it for production purposes.
 
+
+![Screen Capture](https://github.com/the-duck/react-native-space/img/screen.gif)
+
 ### Installation
 ```
 npm install --save react-native-space
@@ -96,11 +99,9 @@ render() {
 
 # TODO
 
-Multiple features are missing, most notably there should be a system to connect with an API.
-
-
-To make it more usable, here's a list of things to do :
-- Function to add components in it depending on coordinates
+- Function to add components in it depending on coordinates √ 
 - Memory object : keep objects in mind to re-render them when on the right coordinates.
 - (logical addition) Remove objects when not in the box.
 - Figure out a way to make it work with a REST api
+- Take velocity into account when scrolling.
+- [you might want to submit an issue if you need something more]

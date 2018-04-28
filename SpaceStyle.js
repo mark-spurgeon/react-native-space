@@ -3,7 +3,7 @@ export default SpaceStyles = StyleSheet.create({
 
   _spaceView: {
     flex:0,
-    height:"80%",
+    height:"100%",
     width:"100%",
     backgroundColor:"#1E59E9",
     overflow:"hidden"
@@ -28,7 +28,7 @@ export default SpaceStyles = StyleSheet.create({
   },
 
   testText : {
-    backgroundColor:"#204060",
+    backgroundColor:"#202060",
     padding:5,
     color:"white",
     borderTopLeftRadius:3,
