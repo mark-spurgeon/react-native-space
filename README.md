@@ -28,7 +28,7 @@ import {Text} from 'react-native';
 class MainView extends React.Component {
 
   loadComponents(boundary) {
-    //... check if items are in the boundaries
+    //... check if items are in the boundary
     return [
       {
         x:10,
@@ -45,7 +45,7 @@ class MainView extends React.Component {
       <Space
         x={0}
         y={0}
-        loadInitialComponents={(b)=>loadComponents(b)}
+        onInitial={(b)=>loadComponents(b)}
       />  
     );
   }
@@ -55,7 +55,7 @@ class MainView extends React.Component {
 You might as well use Space's testing component(s)
 
 `
-import {SpaceTest} from 'react-native-space';
+import {ComponentTest1} from 'react-native-space';
 `
 
 
@@ -66,20 +66,21 @@ import {SpaceTest} from 'react-native-space';
 | x | 0 | Number | X position of the component on the space |
 | y | 0 | Number | Y position of the component on the space |
 | theme | 0 | React.StyleSheet | Override theme, checkout the docs : [link soon](https://) |
-| loadInitialComponents | None | Function | Gets a list of components to load initially. Passes a `boundary` json object |
-| onPositionChange | None | Function | Optionnaly add an event listener, passes a `boundary` json object.|
+| onInitial | None | Function (Event) | Return a list of components to load initially. Passes a `boundary` json object |
+| onUpdate | None | Function (Event) | Return a list of components to add depending on the boundary. Passes a `boundary` json object.|
+| addComponent | return null | Function | Add a component. ! This has not been entirely tested, and should not be used(and anyway it should be used in a certain way which has not been documented yet) |
 
 #### Functions
 All functions pass `boundary` data, which corresponds to the area that the component covers.
 ```
 ...
 
-onPos(boundary) {
+update(boundary) {
   /*
-  var t = boundary.top;
-  var l = boundary.left;
-  var r = boundary.right;
-  var b = boundary.bottom;
+  var t = boundary.view.top;
+  var l = boundary.view.left;
+  var r = boundary.view.right;
+  var b = boundary.view.bottom;
   */
 }
 
@@ -88,8 +89,8 @@ render() {
     <Space
       x={0}
       y={0}
-      loadInitialComponents={(b)=>loadComponents(b)}
-      onPositionChange={(b) => onPos(b)}
+      onInitial={(b)=>loadComponents(b)}
+      onUpdate={(b) => update(b)}
     />  
   );
 }
@@ -99,9 +100,10 @@ render() {
 
 # TODO
 
-- Function to add components in it depending on coordinates √ 
-- Memory object : keep objects in mind to re-render them when on the right coordinates.
-- (logical addition) Remove objects when not in the box.
+- Component ID system [crucial] : generate ID.
+- Memory object : keep objects in mind to re-render them when on the right coordinates. (close to being done)
+- (logical addition) Remove objects when not in the box. (close as well, goes with memory system)
+- Add components while already running (√ though still experimental)
 - Figure out a way to make it work with a REST api
 - Take velocity into account when scrolling.
-- [you might want to submit an issue if you need something more]
+- [you might want to submit an issue if you need something more :)]

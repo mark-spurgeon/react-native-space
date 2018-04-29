@@ -1,10 +1,10 @@
 {
   "name": "react-native-space",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A component which lets you access some conceptual space",
   "main": "Space.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": ""
   },
   "author": "Mark Spurgeon <markspurgeon96@hotmail.com>",
   "license": "MIT",

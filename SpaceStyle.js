@@ -18,6 +18,13 @@ export default SpaceStyles = StyleSheet.create({
     left:0
   },
 
+  _spaceComponentNotFound : {
+    width:100,
+    height:100,
+    fontWeight:'bold',
+    backgroundColor:"red",
+    color:"white"
+  },
 
   testView : {
     backgroundColor:"white",
