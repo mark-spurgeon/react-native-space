@@ -6,7 +6,8 @@ import {
   View,
   PanResponder,
   Animated,
-  TextInput
+  TextInput,
+  PixelRatio
 } from 'react-native';
 
 import SpaceStyles from "./SpaceStyle";
@@ -27,12 +28,14 @@ export default class Space extends React.Component {
       unitsize : this.props.unitsize || 64,
       memoryComps:[],
       activeComps:[],
-      _compId:0
+      _compId:0,
+      zoomFactor:new Animated.Value(0)
     }
     this.handleInit = this.handleInit.bind(this);
     this.handleMove = this.handleMove.bind(this);
     this.getBoundary = this.getBoundary.bind(this);
     this.initComponents = this.initComponents.bind(this);
+    this.fixComponent = this.fixComponent.bind(this);
   }
 
   /* EVENT : triggers initial event and initiates a bunch of useful information*/
@@ -58,7 +61,8 @@ export default class Space extends React.Component {
       width: event.nativeEvent.layout.width,
       height: event.nativeEvent.layout.height,
       memoryComps : l,
-      activeComps:l
+      activeComps:l,
+      zoomFactor:new Animated.Value(0)
     })
 
   }
@@ -152,6 +156,26 @@ export default class Space extends React.Component {
     }
     return nclist
   }
+
+
+  fixComponent(c) {
+    if (!c.height) {
+      c.height = 100
+    }
+    if (!c.width) {
+      c.width = 100
+    }
+    if (!c.x) {
+      c.x = 100
+    }
+    if (!c.y) {
+      c.y = 100
+    }
+    if (!c.component) {
+      c.component = <ComponentTest1/>
+    }
+  }
+
   /* ACTION : DISPLAY COMPONENT */
 
   selectActiveComponents(b) {
@@ -165,20 +189,33 @@ export default class Space extends React.Component {
   }
 
   /* SPECIFIC INFO : gets the grid's line's styles [needs a cleaner aproach?] */
-  getLineStyle(linesize, rowsize) {
+  getLineStyle(i,linesize, rowsize) {
+
+    const pixelvalue = PixelRatio.getPixelSizeForLayoutSize(this.state.unitsize);
+
     if (linesize===0) {
+      if ( (rowsize-this.state.width/2)<0 ) {
+        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(rowsize-this.state.width/2)/pixelvalue );
+      } else if ( (rowsize-this.state.width/2)>=0 ) {
+        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (rowsize-this.state.width/2)/pixelvalue );
+      }
       var top = rowsize;
       var left = 0;
       var width = "100%";
       var height = 1;
       var translateX = 0;
-      var translateY = this.state.pan.y;
+      var translateY = Animated.add(this.state.pan.y, zoomAdd1);
     } else if (rowsize===0) {
+      if ( (linesize-this.state.width/2)<0 ) {
+        var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );
+      } else if ( (linesize-this.state.width/2)>=0 ) {
+        var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (linesize-this.state.width/2)/pixelvalue );
+      }
       var top = 0;
       var left = linesize;
       var height = "100%";
       var width = 1;
-      var translateX = this.state.pan.x;
+      var translateX = Animated.add(this.state.pan.x, zoomAdd);
       var translateY = 0;
     }
     if (this.props.theme) {
@@ -207,40 +244,106 @@ export default class Space extends React.Component {
 
   render() {
 
+
+    /* zoom factor */
+    if (this.props.zoomFactor !== this.state.zoomFactor.__getValue()) {
+      Animated.timing(
+        this.state.zoomFactor,
+        {
+          toValue: this.props.zoomFactor,
+          duration: 400,
+        }
+      ).start();
+    };
+
     /* Calculate the grid's position */
     const numberoflines = Math.floor(this.state.width/this.state.unitsize)+4;
     var lines = [];
     for (i=0; i<numberoflines; i++ ) {
-      lines.push({x: (i-2)*this.state.unitsize-this.state.unitsize-this.state.unitsize/2, id:i});
+      var linepos = (i-2)*this.state.unitsize-this.state.unitsize - this.state.unitsize/2;
+      lines.push({x: linepos, id:i});
     };
     const numberofrows = Math.floor(this.state.height/this.state.unitsize)+4;
     var rows = [];
     for (i=0; i<numberofrows; i++ ) {
-      rows.push({y: (i-2)*this.state.unitsize-this.state.unitsize/2, id:i});
+      rows.push({y: (i-2)*this.state.unitsize-this.state.unitsize-this.state.unitsize/2, id:i});
     };
 
+    /* ADD COMPONENTS - newComponents */
 
-    if (this.props.addComponent && typeof this.props.addComponent == 'function') {
-      try {
+    if (this.props.newComponents != null) {
         var comps = this.state.activeComps;
-        var newcomps = this.props.addComponent();
-        if (newcomps!==null) {
-          for (var i = 0; i < newcomps.length; i++) {
-            comps.push(newcomps[i]);
+        var uids=[];
+        for (var i = 0; i < comps.length; i++) {
+          if (comps[i].uid) {
+            uids.push(comps[i].uid);
           }
         }
-        /*TODO : there will probably be duplicates, find a way to prevent this
-                + find a way to add ids to these new components */
-        this.setState({activeComps: comps})
-      } catch (e) {
+        var newcomps = this.props.newComponents;
 
-      }
+        for (var i = 0; i < newcomps.length; i++) {
+          if (newcomps[i].uid && uids.indexOf(newcomps[i].uid)<0 ) {
+            var newcom = this.fixComponent(newcomps[i]);
+            comps.push(newcom);
+          } else {
+            console.warn("react-native-space : addComponents : either some items are already rendered  or you forgot to assign a 'uid' (unique ID) to one ore more item(s).");
+          }
+        }
     }
 
+
+    /* DRAW COMPONENTS */
+
     if (this.state.activeComps.length>0) {
-      var items = this.state.activeComps.map(item =>
-        (<Animated.View style={{position:"absolute", top:Animated.multiply(Animated.add(this.state.d.y, -item.y), -1), left:Animated.multiply(Animated.add(this.state.d.x, -item.x), -1), width:item.width, height:item.height}}>{item.component}</Animated.View>)
-      );
+
+      const pixelUnitValue = PixelRatio.getPixelSizeForLayoutSize(this.state.unitsize);
+
+      var items = this.state.activeComps.map((item) => {
+
+
+        var baseTopPosition = Animated.multiply(Animated.add(this.state.d.y, -item.y), -1);
+        if (baseTopPosition.__getValue() < (this.state.height/2)) {
+            var addition = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ), -1) );
+            /*Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );*/
+        } else {
+            var addition = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ) );
+        }
+        var topPosition = Animated.add(Animated.add(baseTopPosition, addition), -item.height/2);
+
+
+
+        var baseLeftPosition = Animated.multiply(Animated.add(this.state.d.x, -item.x), -1);
+
+        if (baseLeftPosition.__getValue() <= (this.state.width/2)) {
+
+          var addition2 = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ), -1) );
+
+        } else if (baseLeftPosition.__getValue() > (this.state.width/2)){
+
+          var addition2 = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ) );
+        }
+
+        var leftPosition = Animated.add( Animated.add(baseLeftPosition, addition2 ), -item.width/2);
+
+        return (
+          (<Animated.View
+              style={{position:"absolute",
+                top:topPosition,
+                left:leftPosition,
+                width:item.width,
+                height:item.height,
+                transform: [
+                  {scaleX: Animated.add(1,this.state.zoomFactor)},
+                  {scaleY: Animated.add(1,this.state.zoomFactor)}
+                ]
+                }}
+              >
+
+                {item.component}
+
+            </Animated.View>)
+        )
+      });
     } else {
       var items = [];
     }
@@ -252,8 +355,8 @@ export default class Space extends React.Component {
     }
     return (
       <View onLayout={(e) => this.handleInit(e)} style={style._spaceView || SpaceStyles._spaceView} {...this._panResponder.panHandlers} >
-        { lines.map(line => <Animated.View style={this.getLineStyle(line.x, 0)} key={line.id}></Animated.View>)}
-        { rows.map(row => <Animated.View style={this.getLineStyle(0,row.y)} key={row.id}></Animated.View>)}
+        { lines.map(line => <Animated.View style={this.getLineStyle(line.id, line.x, 0)} key={line.id}></Animated.View>)}
+        { rows.map(row => <Animated.View style={this.getLineStyle(row.id, 0,row.y)} key={row.id}></Animated.View>)}
 
         {items}
 
