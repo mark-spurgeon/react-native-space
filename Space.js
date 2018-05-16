@@ -23,7 +23,7 @@ export default class Space extends React.Component {
       y:this.props.y || 0,
       width: 0,
       height: 0,
-      pan:new Animated.ValueXY(),
+      pan:new Animated.ValueXY({x:0, y:0}),
       d:new Animated.ValueXY({x:this.props.x||0, y:this.props.y||0}),
       unitsize : this.props.unitsize || 64,
       memoryComps:[],
@@ -36,6 +36,7 @@ export default class Space extends React.Component {
     this.getBoundary = this.getBoundary.bind(this);
     this.initComponents = this.initComponents.bind(this);
     this.fixComponent = this.fixComponent.bind(this);
+    this.getLineStyle = this.getLineStyle.bind(this);
   }
 
   /* EVENT : triggers initial event and initiates a bunch of useful information*/
@@ -48,7 +49,7 @@ export default class Space extends React.Component {
         try {
           var l = this.initComponents(this.props.onInitial(this.getBoundary(x,y,x+this.state.width, y+this.state.height)));
         } catch (e) {
-          console.log(e);
+          console.warn(e);
           var l = []
         }
       }
@@ -76,7 +77,7 @@ export default class Space extends React.Component {
       try {
         this.props.onUpdate(boundarybox);
       } catch (e) {
-        console.log(e);
+        console.warn(e);
       }
     }
   }
@@ -88,22 +89,29 @@ export default class Space extends React.Component {
       onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
       onStartShouldSetPanResponder: (e, gesture) => true,
       onPanResponderMove: (e, gesture) => {
-        var x = this.state.x;
-        var y = this.state.y;
-        var newx = x-gesture.dx;
-        var newy = y-gesture.dy;
-        var newgx = -newx;
-        var newgy = -newy;
-        if (newgx<-this.state.unitsize || newgx>=this.state.unitsize) {
-          newgx = (Math.floor(newx/this.state.unitsize)-newx/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
+        if (this.state.zoomFactor.__getValue()===0){
+          var x = this.state.x;
+          var y = this.state.y;
+          var newx = x-gesture.dx;
+          var newy = y-gesture.dy;
+          var newgx = -newx;
+          var newgy = -newy;
+          if (newgx<-this.state.unitsize || newgx>=this.state.unitsize) {
+            newgx = (Math.floor(newx/this.state.unitsize)-newx/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
+          }
+          if (gesture.dy<-this.state.unitsize || gesture.dy>=this.state.unitsize) {
+            newgy = (Math.floor(newy/this.state.unitsize)-newy/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
+            if (newgy>this.state.unitsize) {
+              newgy = newgy-this.state.unitsize
+            } else if (newgy<-this.state.unitsize) {
+              newgy = newgy+this.state.unitsize
+            }
+          }
+          Animated.event([
+            null,
+            { dx: this.state.pan.x, dy: this.state.pan.y, wholedx:this.state.d.x, wholedy:this.state.d.y },
+          ])(e, {dx:newgx, dy:newgy, wholedx:newx, wholedy:newy});
         }
-        if (gesture.dy<-this.state.unitsize || gesture.dy>=this.state.unitsize) {
-          newgy = (Math.floor(newy/this.state.unitsize)-newy/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
-        }
-        Animated.event([
-          null,
-          { dx: this.state.pan.x, dy: this.state.pan.y, wholedx:this.state.d.x, wholedy:this.state.d.y },
-        ])(e, {dx:newgx, dy:newgy, wholedx:newx, wholedy:newy});
 
         /*var x = this.state.x;
         var y = this.state.y;
@@ -194,28 +202,34 @@ export default class Space extends React.Component {
     const pixelvalue = PixelRatio.getPixelSizeForLayoutSize(this.state.unitsize);
 
     if (linesize===0) {
+
+      var rposition = Animated.add(rowsize, this.state.pan.y);
+
       if ( (rowsize-this.state.width/2)<0 ) {
-        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(rowsize-this.state.width/2)/pixelvalue );
+        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(rowsize-this.state.height/2)/pixelvalue );
       } else if ( (rowsize-this.state.width/2)>=0 ) {
-        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (rowsize-this.state.width/2)/pixelvalue );
+        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (rowsize-this.state.height/2)/pixelvalue );
       }
-      var top = rowsize;
+      var top = rposition;
       var left = 0;
       var width = "100%";
       var height = 1;
       var translateX = 0;
-      var translateY = Animated.add(this.state.pan.y, zoomAdd1);
+      var translateY =  zoomAdd1;
     } else if (rowsize===0) {
+
+      var lposition = Animated.add(linesize, this.state.pan.x);
+
       if ( (linesize-this.state.width/2)<0 ) {
         var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );
       } else if ( (linesize-this.state.width/2)>=0 ) {
         var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (linesize-this.state.width/2)/pixelvalue );
       }
       var top = 0;
-      var left = linesize;
+      var left = lposition;
       var height = "100%";
       var width = 1;
-      var translateX = Animated.add(this.state.pan.x, zoomAdd);
+      var translateX = zoomAdd;
       var translateY = 0;
     }
     if (this.props.theme) {
@@ -243,30 +257,30 @@ export default class Space extends React.Component {
   }
 
   render() {
-
-
     /* zoom factor */
-    if (this.props.zoomFactor !== this.state.zoomFactor.__getValue()) {
+    if ( this.props.zoomFactor !== this.state.zoomFactor.__getValue()) {
+
       Animated.timing(
         this.state.zoomFactor,
         {
           toValue: this.props.zoomFactor,
-          duration: 400,
+          duration: 300,
         }
       ).start();
     };
 
     /* Calculate the grid's position */
-    const numberoflines = Math.floor(this.state.width/this.state.unitsize)+4;
+    const numberoflines = Math.floor(this.state.width/this.state.unitsize)+2;
     var lines = [];
     for (i=0; i<numberoflines; i++ ) {
-      var linepos = (i-2)*this.state.unitsize-this.state.unitsize - this.state.unitsize/2;
+      var linepos = (i-1)*this.state.unitsize - this.state.unitsize/2;
       lines.push({x: linepos, id:i});
     };
-    const numberofrows = Math.floor(this.state.height/this.state.unitsize)+4;
+    const numberofrows = Math.floor(this.state.height/this.state.unitsize)+2;
     var rows = [];
     for (i=0; i<numberofrows; i++ ) {
-      rows.push({y: (i-2)*this.state.unitsize-this.state.unitsize-this.state.unitsize/2, id:i});
+      var rowpos = (i-1)*this.state.unitsize - this.state.unitsize/2;
+      rows.push({y: rowpos, id:i});
     };
 
     /* ADD COMPONENTS - newComponents */
@@ -333,8 +347,8 @@ export default class Space extends React.Component {
                 width:item.width,
                 height:item.height,
                 transform: [
-                  {scaleX: Animated.add(1,this.state.zoomFactor)},
-                  {scaleY: Animated.add(1,this.state.zoomFactor)}
+                  {scaleX: Animated.add(1,Animated.multiply(0.5,this.state.zoomFactor))},
+                  {scaleY: Animated.add(1, Animated.multiply(0.5,this.state.zoomFactor))}
                 ]
                 }}
               >
