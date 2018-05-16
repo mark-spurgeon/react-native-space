@@ -14,7 +14,11 @@ But this means we can add whatever we want to that space. And that's the cool pa
 ```
 npm install --save react-native-space
 ```
+<<<<<<< HEAD
 Current version : 0.1.4
+=======
+Current version : 0.1.3
+>>>>>>> c92f5dd8b0c6a6d788cad19dfaef95bce31b04a6
 
 ### Usage
 
