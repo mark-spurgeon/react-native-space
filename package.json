@@ -1,6 +1,6 @@
 {
   "name": "react-native-space",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "A component which lets you access some conceptual space",
   "main": "Space.js",
   "scripts": {

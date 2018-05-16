@@ -14,7 +14,7 @@ But this means we can add whatever we want to that space. And that's the cool pa
 ```
 npm install --save react-native-space
 ```
-make sure it's version 0.0.4 ... or higher
+Current version : 0.1.3
 
 ### Usage
 
