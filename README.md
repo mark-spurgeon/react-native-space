@@ -1,4 +1,6 @@
-# React Native Space
+![logo](https://github.com/the-duck/react-native-space/blob/master/img/rnspace.png)
+React Native Space
+======
 
 A compenent allowing you to play with space. By "space", I mean the concept of space : some space where entites occupy some space in a certain position.
 
@@ -14,7 +16,7 @@ But this means we can add whatever we want to that space. And that's the cool pa
 ```
 npm install --save react-native-space
 ```
-Current version : 0.2 (latest is most stable)
+Current version : 0.2.0 (latest is most stable)
 
 ### Usage
 
@@ -123,4 +125,4 @@ console.log(pos.x, pos.y)
 - Memory object : keep objects in mind to re-render them when on the right coordinates. (close to being done) 👌
 - Add components while already running 👌
 - Take velocity into account when moving the space around. 🔨
-- Remove objects when not in the box. (close as well, goes with memory system) 🔨 
+- Remove objects when not in the box. (close as well, goes with memory system) 🔨
