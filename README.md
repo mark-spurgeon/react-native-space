@@ -1,8 +1,10 @@
-![logo](https://github.com/the-duck/react-native-space/blob/master/img/rnspace.png)
+
 React Native Space
 ======
+![logo](https://github.com/the-duck/react-native-space/blob/master/img/rnspace.png)
 
-A compenent allowing you to play with space. By "space", I mean the concept of space : some space where entites occupy some space in a certain position.
+
+A component allowing you to play with space. By "space", I mean the concept of space : some space where entites occupy some space in a certain position.
 
 Basically, it's a stripped-down map.
 
