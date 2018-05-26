@@ -31,7 +31,7 @@ export default class Space extends React.Component {
       memoryComps:[],
       activeComps:[],
       _compId:0,
-      zoomFactor:new Animated.Value(0)
+      zoomFactor:new Animated.Value(1)
     }
     this.handleInit = this.handleInit.bind(this);
     this.handleMove = this.handleMove.bind(this);
@@ -51,22 +51,24 @@ export default class Space extends React.Component {
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
       onMoveShouldSetPanResponder: (e, gesture) => true,
       onPanResponderMove: (e, gesture) => {
-        var x = this.state.x;
-        var y = this.state.y;
-        var newx = x-gesture.dx;
-        var newy = y-gesture.dy;
-        var newgx = -newx;
-        var newgy = -newy;
-        if (newgx<-this.state.unitsize || newgx>=this.state.unitsize) {
-          newgx = (Math.floor(newx/this.state.unitsize)-newx/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
+        if (this.state.zoomFactor.__getValue()===1) {
+          var x = this.state.x;
+          var y = this.state.y;
+          var newx = x-gesture.dx;
+          var newy = y-gesture.dy;
+          var newgx = -newx;
+          var newgy = -newy;
+          if (newgx<-this.state.unitsize || newgx>=this.state.unitsize) {
+            newgx = (Math.floor(newx/this.state.unitsize)-newx/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2.0;
+          }
+          if (gesture.dy<-this.state.unitsize || gesture.dy>=this.state.unitsize) {
+            newgy = (Math.floor(newy/this.state.unitsize)-newy/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2.0;
+          }
+          Animated.event([
+            null,
+            { dx: this.state.pan.x, dy: this.state.pan.y, wholedx:this.state.d.x, wholedy:this.state.d.y },
+          ])(e, {dx:newgx, dy:newgy, wholedx:newx, wholedy:newy});
         }
-        if (gesture.dy<-this.state.unitsize || gesture.dy>=this.state.unitsize) {
-          newgy = (Math.floor(newy/this.state.unitsize)-newy/this.state.unitsize)*this.state.unitsize+this.state.unitsize*2;
-        }
-        Animated.event([
-          null,
-          { dx: this.state.pan.x, dy: this.state.pan.y, wholedx:this.state.d.x, wholedy:this.state.d.y },
-        ])(e, {dx:newgx, dy:newgy, wholedx:newx, wholedy:newy});
 
         /*var x = this.state.x;
         var y = this.state.y;
@@ -177,6 +179,24 @@ export default class Space extends React.Component {
       "status":"removed",
     }
   }
+  Zoom(val){
+    Animated.timing(
+      this.state.zoomFactor,
+      {
+        toValue: val,
+        duration: 400,
+      }
+    ).start();
+  }
+  deZoom(){
+    Animated.timing(
+      this.state.zoomFactor,
+      {
+        toValue: 1,
+        duration: 400,
+      }
+    ).start();
+  }
 
   /* INTERNAL INFO : boundary box */
   _getBoundary(left, top, right, bottom) {
@@ -232,8 +252,8 @@ export default class Space extends React.Component {
         activeComps:nclist,
         memoryComps:nclist
       })
-      return nclist
     })
+    return nclist
   }
 
 
@@ -243,10 +263,16 @@ export default class Space extends React.Component {
     const pixelvalue = PixelRatio.getPixelSizeForLayoutSize(this.state.unitsize);
 
     if (linesize===0) {
-      if ( (rowsize-this.state.width/2)<0 ) {
-        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(rowsize-this.state.width/2)/pixelvalue );
-      } else if ( (rowsize-this.state.width/2)>=0 ) {
-        var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (rowsize-this.state.width/2)/pixelvalue );
+      if ( rowsize<this.state.height/2 ) {
+        var diff = Animated.add(this.state.height/2, Animated.multiply(-1, rowsize));
+        var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+        var zoomAdd1 = Animated.add(diff, Animated.multiply(-1, diffmult));
+        // var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(rowsize-this.state.width/2)/pixelvalue );
+      } else if ( rowsize>=this.state.height/2 ) {
+        var diff = Animated.add(rowsize, Animated.multiply(-1, this.state.height/2));
+        var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+        var zoomAdd1 = Animated.add(diffmult, Animated.multiply(-1, diff));
+        // var zoomAdd1 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (rowsize-this.state.width/2)/pixelvalue );
       }
       var top = rowsize;
       var left = 0;
@@ -255,16 +281,22 @@ export default class Space extends React.Component {
       var translateX = 0;
       var translateY = Animated.add(this.state.pan.y, zoomAdd1);
     } else if (rowsize===0) {
-      if ( (linesize-this.state.width/2)<0 ) {
-        var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );
-      } else if ( (linesize-this.state.width/2)>=0 ) {
-        var zoomAdd = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (linesize-this.state.width/2)/pixelvalue );
+      if (linesize<this.state.width/2 ) {
+        var diff = Animated.add(this.state.width/2, Animated.multiply(-1, linesize));
+        var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+        var zoomAdd2 = Animated.add(diff, Animated.multiply(-1, diffmult));
+        // var zoomAdd2 = Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );
+      } else if (linesize>this.state.width/2 ) {
+        var diff = Animated.add(linesize, Animated.multiply(-1, this.state.width/2));
+        var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+        var zoomAdd2 = Animated.add(diffmult, Animated.multiply(-1, diff));
+        //var zoomAdd2 = Animated.multiply(Animated.multiply(this.state.zoomFactor, this.state.unitsize), (linesize-this.state.width/2)/pixelvalue );
       }
       var top = 0;
       var left = linesize;
       var height = "100%";
       var width = 1;
-      var translateX = Animated.add(this.state.pan.x, zoomAdd);
+      var translateX = Animated.add(this.state.pan.x, zoomAdd2);
       var translateY = 0;
     }
     if (this.props.theme) {
@@ -311,34 +343,44 @@ export default class Space extends React.Component {
 
     if (this.state.activeComps.length>0) {
 
-      const pixelUnitValue = PixelRatio.getPixelSizeForLayoutSize(this.state.unitsize);
       var uids = []
       var items = this.state.activeComps.map((item) => {
         if (uids.indexOf(item.uid)<0) {
           uids.push(item.uid);
-          var baseTopPosition = Animated.multiply(Animated.add(this.state.d.y, -item.y), -1);
-          if (baseTopPosition.__getValue() < (this.state.height/2)) {
-              var addition = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ), -1) );
+
+          var baseTopPosition = Animated.add(Animated.add(Animated.multiply(this.state.d.y,-1), item.y), Animated.multiply(-1, item.height/2));
+          if (baseTopPosition.__getValue()+item.height/2 < (this.state.height/2)) {
+              var diff = Animated.add(this.state.height/2, Animated.multiply(-1, baseTopPosition));
+              var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+              var zoomAdd1 = Animated.add(diffmult, Animated.multiply(-1, diff));
+              // var addition = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ), -1) );
               /*Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );*/
           } else {
-              var addition = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ) );
+              var diff = Animated.add(baseTopPosition, Animated.multiply(-1, this.state.height/2));
+              var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+              var zoomAdd1 = Animated.add(diffmult, Animated.multiply(-1, diff));
+              //  var addition = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ) );
           }
-          var topPosition = Animated.add(Animated.add(baseTopPosition, addition), -item.height/2);
+          var topPosition = Animated.add(baseTopPosition, Animated.multiply(-1, zoomAdd1));
 
 
 
-          var baseLeftPosition = Animated.multiply(Animated.add(this.state.d.x, -item.x), -1);
+          var baseLeftPosition = Animated.add(Animated.add(Animated.multiply(this.state.d.x,-1), item.x), Animated.multiply(-1, item.width/2));
 
-          if (baseLeftPosition.__getValue() <= (this.state.width/2)) {
+          if (baseLeftPosition.__getValue()+item.width/2 < this.state.width/2) {
+            var diff = Animated.add(this.state.width/2, Animated.multiply(-1, baseLeftPosition));
+            var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+            var zoomAdd2 = Animated.add(diffmult, Animated.multiply(-1, diff));
+            //var addition2 = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ), -1) );
 
-            var addition2 = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ), -1) );
-
-          } else if (baseLeftPosition.__getValue() > (this.state.width/2)){
-
-            var addition2 = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ) );
+          } else {
+            var diff = Animated.add(baseLeftPosition, Animated.multiply(-1, this.state.width/2));
+            var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+            var zoomAdd2 = Animated.add(diff, Animated.multiply(-1, diffmult));
+            //var addition2 = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ) );
           }
 
-          var leftPosition = Animated.add( Animated.add(baseLeftPosition, addition2 ), -item.width/2);
+          var leftPosition =Animated.add(baseLeftPosition, Animated.multiply(-1, zoomAdd2));
 
           return (
             (<Animated.View
@@ -348,8 +390,8 @@ export default class Space extends React.Component {
                   width:item.width,
                   height:item.height,
                   transform: [
-                    {scaleX: Animated.add(1,this.state.zoomFactor)},
-                    {scaleY: Animated.add(1,this.state.zoomFactor)}
+                    {scaleX:this.state.zoomFactor},
+                    {scaleY:this.state.zoomFactor}
                   ]
                   }}
                   key={item.uid}
