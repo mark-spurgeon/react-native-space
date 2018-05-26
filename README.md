@@ -14,11 +14,9 @@ But this means we can add whatever we want to that space. And that's the cool pa
 ```
 npm install --save react-native-space
 ```
-Current version : 0.1.4
+Current version : 0.2 (latest is most stable)
 
 ### Usage
-
-Use it as a component. Like this :
 
 ```
 import Space from 'react-native-space';
@@ -35,7 +33,8 @@ class MainView extends React.Component {
         y:100,
         width:100,
         height:100,
-        component: <Text>Oh hi mark</Text>  // Any React component, in theory
+        uid:"anything that's unique to the item",
+        component: <Text>Oh hi mark</Text>  // Any React component
       }
     ]
   }
@@ -52,58 +51,76 @@ class MainView extends React.Component {
 }
 
 ```
-You might as well use Space's testing component(s)
-
-`
-import {ComponentTest1} from 'react-native-space';
-`
 
 
-### Properties
+# Properties
 
 | prop        | default     | type  | description |
 | ----------- |:-----------:| -----:| ----------- |
 | x | 0 | Number | X position of the component on the space |
 | y | 0 | Number | Y position of the component on the space |
-| theme | 0 | React.StyleSheet | Override theme, checkout the docs : [link soon](https://) |
-| onInitial | None | Function (Event) | Return a list of components to load initially. Passes a `boundary` json object |
-| onUpdate | None | Function (Event) | Return a list of components to add depending on the boundary. Passes a `boundary` json object.|
-| addComponent | return null | Function | Add a component. ! This has not been entirely tested, and should not be used(and anyway it should be used in a certain way which has not been documented yet) |
+| unitsize | 64 | Number | Size of the 'unit' of the grid |
+| backgroundColor | # | color value | Background color |
+| lineColor | # | color value | Grid's lines' color |
+| onInitial | null | Function (Event) | Return a list of components to load initially. Passes a `boundary` json object |
+| onUpdate | null | Function (Event) | Return a list of components to add depending on the boundary.|
 
-#### Functions
-All functions pass `boundary` data, which corresponds to the area that the component covers.
+# Functions
+Properties let you monitor what happens when the Space changes. But to add things dynamically, you need to use the 'ref' like so
+
 ```
 ...
 
-update(boundary) {
-  /*
-  var t = boundary.view.top;
-  var l = boundary.view.left;
-  var r = boundary.view.right;
-  var b = boundary.view.bottom;
-  */
+otherFunction() {
+  this.refs.SpaceComponent.addItem()
 }
 
 render() {
   return (
     <Space
-      x={0}
-      y={0}
-      onInitial={(b)=>loadComponents(b)}
-      onUpdate={(b) => update(b)}
+      ...
+      ...
+      ref={"SpaceComponent"}
     />  
   );
 }
 
-... in your MainView component, for example
+...
+
+```
+
+#### addItem(item)
+Add an item to the Space
+```
+var i = this.refs.SpaceComponent.addItem({
+    x: 0,
+    y:0,
+    width:100,
+    height:100,
+    uid:'lakenfjeohfi',
+    component:<Text>I like spaghett</Text>
+  })
+console.log(i.status) // returns 'ok'
+```
+#### removeItem(uid)
+Remove an item.
+```
+var rm = this.refs.SpaceComponent.removeItem(uid)
+console.log(rm.status) // returns 'removed'
+```
+__All__ objects with the `uid` will be removed, so this property is important.
+
+#### getPosition()
+Gets the position of the Space
+```
+var pos = this.refs.SpaceComponent.getPosition()
+console.log(pos.x, pos.y)
 ```
 
 # TODO
 
-- Component ID system [crucial] : generate ID.
-- Memory object : keep objects in mind to re-render them when on the right coordinates. (close to being done)
-- (logical addition) Remove objects when not in the box. (close as well, goes with memory system)
-- Add components while already running (√ though still experimental)
-- Figure out a way to make it work with a REST api
-- Take velocity into account when scrolling.
-- [you might want to submit an issue if you need something more :)]
+- Component ID system [crucial] : generate ID. 👌
+- Memory object : keep objects in mind to re-render them when on the right coordinates. (close to being done) 👌
+- Add components while already running 👌
+- Take velocity into account when moving the space around. 🔨
+- Remove objects when not in the box. (close as well, goes with memory system) 🔨 
