@@ -1,6 +1,6 @@
 {
   "name": "react-native-space",
-  "version": "0.2.1",
+  "version": "0.2.4",
   "description": "A Component that lets you position components in a given space",
   "main": "Space.js",
   "scripts": {
@@ -11,5 +11,11 @@
   "devDependencies": {
     "react-native": "^0.55.3"
   },
-  "keywords": ["react-native", "space", "area", "map", "component"]
+  "keywords": [
+    "react-native",
+    "space",
+    "area",
+    "map",
+    "component"
+  ]
 }

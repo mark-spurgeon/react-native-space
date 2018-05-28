@@ -82,18 +82,19 @@ export default class Space extends React.Component {
     })
   }
   /* INIT : already rendered, gets informations when rendered*/
-  async handleInit(event) {
-    var xpos = this.props.x || 0;
-    var ypos = this.props.y || 0;
+  handleInit(event) {
     var xwidth = event.nativeEvent.layout.width;
     var yheight = event.nativeEvent.layout.height;
+    var xpos = this.props.x ;
+    var ypos = this.props.y ;
 
     if (this.props.onInitial) {
       if (typeof this.props.onInitial == 'function') {
         try {
-          var l = this._initComponents(this._getBoundary(xpos,ypos,xpos+xwidth, ypos+yheight));
+          var b = this._getBoundary(xpos,ypos,xpos+xwidth, ypos+yheight);
+          var l = this._initComponents(b);
         } catch (e) {
-          console.log(e);
+          console.error(e);
           var l = []
         }
       }
@@ -114,12 +115,13 @@ export default class Space extends React.Component {
     };
 
     this.setState({
-      x:xpos,
-      y:ypos,
+      x:xpos-xwidth/2,
+      y:ypos-yheight/2,
       width: xwidth,
       height: yheight,
       rows: rows,
-      lines:lines
+      lines:lines,
+      d:new Animated.ValueXY({x:xpos-xwidth/2, y:ypos-yheight/2}), // change d position to the right one initially
     })
 
   }
@@ -193,7 +195,7 @@ export default class Space extends React.Component {
       this.state.zoomFactor,
       {
         toValue: 1,
-        duration: 400,
+        duration: 300,
       }
     ).start();
   }
@@ -230,6 +232,10 @@ export default class Space extends React.Component {
     if (!c.component) {
       newc.component = <ComponentTest1/> // TODO : REPLACE WITH PLACEHOLDER COMP, NOT TESTING COMP
     }
+    newc.x = Number(newc.x);
+    newc.y = Number(newc.y);
+    newc.width = Number(newc.width);
+    newc.height = Number(newc.height);
     return newc;
   }
   /* INTERNAL ACTION: select components that should be rendered */
@@ -238,22 +244,18 @@ export default class Space extends React.Component {
   }
   /* INTERNAL ACTION : convert initial components to the right stuff [especially add a unique id] */
   async _initComponents(boundary) {
-    await this.props.onInitial(boundary).then((clist) => {
-      var nclist = [];
-      var compId = 0;
-      for (var i = 0; i < clist.length; i++) {
-        var n = clist[i];
-        if (!n.uid) {
-          console.warn('Space : Item should have a unique ID...');
-        }
-        nclist.push(this._fixComponent(n));
-      }
-      this.setState({
-        activeComps:nclist,
-        memoryComps:nclist
-      })
+    var clist = await this.props.onInitial(boundary);
+    var nclist = [];
+    for (var i = 0; i < clist.length; i++) {
+      var n = clist[i];
+      var nfix = this._fixComponent(n);
+      nclist.push(nfix);
+    }
+    this.setState({
+      activeComps:nclist,
+      memoryComps:nclist
     })
-    return nclist
+    return nclist;
   }
 
 
@@ -326,19 +328,6 @@ export default class Space extends React.Component {
 
   render() {
 
-
-    /* ZOOM FACTOR FROM PROP */
-    if ( this.props.zoomFactor && this.props.zoomFactor !== this.state.zoomFactor.__getValue()) {
-      Animated.timing(
-        this.state.zoomFactor,
-        {
-          toValue: this.props.zoomFactor,
-          duration: 400,
-        }
-      ).start();
-    };
-
-
     /* CREATE ITEM LIST */
 
     if (this.state.activeComps.length>0) {
@@ -356,7 +345,7 @@ export default class Space extends React.Component {
               // var addition = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ), -1) );
               /*Animated.multiply(Animated.multiply(this.state.zoomFactor, -this.state.unitsize), -(linesize-this.state.width/2)/pixelvalue );*/
           } else {
-              var diff = Animated.add(baseTopPosition, Animated.multiply(-1, this.state.height/2));
+              var diff = Animated.add(this.state.height/2, Animated.multiply(-1, baseTopPosition));
               var diffmult = Animated.multiply(this.state.zoomFactor, diff);
               var zoomAdd1 = Animated.add(diffmult, Animated.multiply(-1, diff));
               //  var addition = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseTopPosition, -this.state.height/2), pixelUnitValue ) );
@@ -368,15 +357,15 @@ export default class Space extends React.Component {
           var baseLeftPosition = Animated.add(Animated.add(Animated.multiply(this.state.d.x,-1), item.x), Animated.multiply(-1, item.width/2));
 
           if (baseLeftPosition.__getValue()+item.width/2 < this.state.width/2) {
-            var diff = Animated.add(this.state.width/2, Animated.multiply(-1, baseLeftPosition));
-            var diffmult = Animated.multiply(this.state.zoomFactor, diff);
-            var zoomAdd2 = Animated.add(diffmult, Animated.multiply(-1, diff));
-            //var addition2 = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ), -1) );
-
-          } else {
             var diff = Animated.add(baseLeftPosition, Animated.multiply(-1, this.state.width/2));
             var diffmult = Animated.multiply(this.state.zoomFactor, diff);
             var zoomAdd2 = Animated.add(diff, Animated.multiply(-1, diffmult));
+            //var addition2 = Animated.multiply(Animated.multiply( -pixelUnitValue , this.state.zoomFactor), Animated.multiply( Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ), -1) );
+
+          } else {
+            var diff = Animated.add(this.state.width/2, Animated.multiply(-1, baseLeftPosition));
+            var diffmult = Animated.multiply(this.state.zoomFactor, diff);
+            var zoomAdd2 = Animated.add(diffmult, Animated.multiply(-1, diff));
             //var addition2 = Animated.multiply(Animated.multiply( pixelUnitValue , this.state.zoomFactor), Animated.divide(Animated.add(baseLeftPosition, -this.state.width/2), pixelUnitValue ) );
           }
 
@@ -447,6 +436,18 @@ export class ComponentNotFound extends React.Component {
   render() {
     return (
       <Text style={SpaceStyles.componentError}> Error : component not found</Text>
+    )
+  }
+};
+
+export class ComponentPoint extends React.Component {
+
+  render() {
+    return (
+      <View style={{backgroundColor:'rgba(255,25,25,0.5)', width:64, height:48}} >
+      <Text style={SpaceStyles.componentError}> X : {this.props.x}</Text>
+      <Text style={SpaceStyles.componentError}> Y : {this.props.y}</Text>
+      </View>
     )
   }
 };
