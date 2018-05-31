@@ -18,7 +18,7 @@ But this means we can add whatever we want to that space. And that's the cool pa
 ```
 npm install --save react-native-space
 ```
-Current version : 0.2.4 - latest is best
+Current version : 0.2.5 - latest is best
 
 ### Usage
 
@@ -124,7 +124,13 @@ console.log(pos.x, pos.y)
 # TODO
 
 - Component ID system [crucial] : generate ID. 👌
-- Memory object : keep objects in mind to re-render them when on the right coordinates. (close to being done) 👌
+- Memory object : keep objects in mind to re-render them when on the right coordinates. 👌
 - Add components while already running 👌
-- Take velocity into account when moving the space around. 🔨
-- Remove objects when not in the box. (close as well, goes with memory system) 🔨
+- Take velocity into account when moving the space around. 🔨 ( ! this will cause issues with getting the spaceview's position)
+- Remove objects when not in the box. Use `_selectActiveComponents()` whenever components are added or space position has changed 🔨
+- Function : getBoundary() 🔨 [probably wait till conversion to `spaceunit`s ]
+- Fix : getPosition() -> not always right apparently
+- Convert x and y positions to units and not points --> create `spaceunit` value, change `unitsize` to `spaceunit`, which is how many points a unit is --> enables crossplatform consistency 🔨🚨
+- Set a limit boundary to the accessible space --> requires conversion to specific space units 🔨
+
+(🚨 : will change the usage so a rupture with current versions)

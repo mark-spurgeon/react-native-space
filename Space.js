@@ -46,8 +46,8 @@ export default class Space extends React.Component {
   componentWillMount() {
     this.state.d.addListener((value) => this.handleMove(value));
     this._panResponder = PanResponder.create({
-      onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
-      onStartShouldSetPanResponder: (e, gesture) => true,
+      /*onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+      onStartShouldSetPanResponder: (e, gesture) => true,*/
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
       onMoveShouldSetPanResponder: (e, gesture) => true,
       onPanResponderMove: (e, gesture) => {
